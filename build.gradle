@@ -1,0 +1,78 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+/* ===================[Plugin Definitions]=================== */
+plugins {
+	id 'java'
+	id 'eclipse'
+}
+
+/* ===================[Custom Variables]=================== */
+def rpmVersionDefault = '0' // Can be changed manually to control RPM Build version on local machine.
+def rpmVersion = project.hasProperty("buildVersion") ? buildVersion : rpmVersionDefault
+
+Properties props = new Properties()
+props.load(new FileInputStream("${projectDir}/src/main/resources/version.properties"))
+def appVersion = props.get('appVersion')
+
+def getDate() {
+	return (new Date()).format("MM-dd-yyyy HH:mm:ss")
+}
+
+/* ===================[Build Settings]=================== */
+version = appVersion
+group = 'com.firebirdcss'
+
+sourceCompatibility = 1.8 
+targetCompatibility = 1.8 
+ 
+/**
+ * Define folder that contains the JAVA source code.
+ */
+sourceSets {
+    main {
+        java.srcDir "src/main/java"
+        resources.srcDir "src/main/resources"
+    }
+    
+    test {
+    	java.srcDir "src/test/java"
+    	resources.srcDir "src/test/resources"
+    }
+}
+
+/**
+ * Defines the repositories from which to fetch required dependencies. 
+ */
+repositories {
+    mavenCentral()
+}
+
+/**
+ * Defines the project dependencies.
+ */
+dependencies {
+	compile 'log4j:log4j:1.2.17' // Used for logging to files and/or to console
+	
+	/* For such a time as JUNITs become a thing */
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+}
+
+/**
+ * Defines the build parameters specific to the building of the JAR.
+ */
+jar {
+	archiveName = "watchman.jar"
+    manifest { 
+        attributes('Implementation-Title': 'Watchman', 
+        			'Implementation-Version': version,
+        			"Implementation-Vendor": "FirebirdCSS",
+        			"Build-Date": getDate(),
+        			"Main-Class": 'com.firebirdcss.watchman.ApplicationMain')
+    }
+    
+	from { 
+		configurations.compile.collect { 
+    		it.isDirectory() ? it : zipTree(it) 
+    	} 
+    }
+}
